@@ -297,10 +297,36 @@
             color: #e9c46a;
         }
 
-        .product-price {
+        /* 新增：价格对比样式 */
+        .price-container {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .original-price {
+            font-size: 13px;
+            color: var(--gray);
+            text-decoration: line-through;
+            margin-bottom: 4px;
+        }
+
+        .sale-price {
             font-weight: 700;
             font-size: 15px;
             color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .sale-badge {
+            background-color: var(--primary);
+            color: white;
+            font-size: 11px;
+            padding: 1px 5px;
+            border-radius: 3px;
+            font-weight: 600;
         }
 
         .action-buttons {
@@ -725,7 +751,15 @@
                 font-size: 13px;
             }
             
-            .product-price {
+            .price-container {
+                font-size: 12px;
+            }
+            
+            .original-price {
+                font-size: 12px;
+            }
+            
+            .sale-price {
                 font-size: 14px;
             }
             
@@ -1496,7 +1530,7 @@
                 
                 <div class="header-stats">
                     <div class="stat-item">
-                        <div class="stat-value" id="totalProducts">7</div>
+                        <div class="stat-value" id="totalProducts">8</div>
                         <div class="stat-label">商品总数</div>
                     </div>
                     <div class="stat-item">
@@ -1618,7 +1652,7 @@
                 <div class="stat-box-label">当前显示商品</div>
             </div>
             <div class="stat-box">
-                <div class="stat-box-value" id="totalCount">7</div>
+                <div class="stat-box-value" id="totalCount">8</div>
                 <div class="stat-box-label">商品总数</div>
             </div>
             <div class="stat-box">
@@ -1724,15 +1758,16 @@
     </div>
 
     <script>
-        // 商品数据 - 已移除库存字段
+        // 商品数据 - 添加原价和活动价字段
         const products = [
-            { id: 1, name: "固满德山道巡礼300-10", category: "tire", price: 88 },
-            { id: 2, name: "山道巡礼90-90-10", category: "tire", price: 118 },
-            { id: 3, name: "山道巡礼100-90-10", category: "tire", price: 128 },
-            { id: 4, name: "天选之子120-70-12", category: "tire", price: 155 },
-            { id: 5, name: "天选之子130-70-12", category: "tire", price: 160 },
-            { id: 6, name: "电热把", category: "accessory", price: 140 },
-            { id: 7, name: "未来之眼F150PRO", category: "lighting", price: 398 }
+            { id: 1, name: "固满德山道巡礼300-10", category: "tire", originalPrice: 110, salePrice: 88 },
+            { id: 2, name: "山道巡礼90-90-10", category: "tire", originalPrice: 158, salePrice: 118 },
+            { id: 3, name: "山道巡礼100-90-10", category: "tire", originalPrice: 168, salePrice: 128 },
+            { id: 4, name: "天选之子120-70-12", category: "tire", originalPrice: 188, salePrice: 155 },
+            { id: 5, name: "天选之子130-70-12", category: "tire", originalPrice: 198, salePrice: 160 },
+            { id: 6, name: "电热把", category: "accessory", originalPrice: 180, salePrice: 140 },
+            { id: 7, name: "未来之眼F150PRO", category: "lighting", originalPrice: 598, salePrice: 398 },
+            { id: 8, name: "螃蟹皮", category: "accessory", originalPrice: 50, salePrice: 35 }
         ];
 
         // 分类映射
@@ -1906,6 +1941,9 @@
                 const inCart = cartItem ? true : false;
                 const cartQuantity = cartItem ? cartItem.quantity : 0;
                 
+                // 计算折扣百分比
+                const discountPercent = Math.round((1 - product.salePrice / product.originalPrice) * 100);
+                
                 const row = document.createElement('tr');
                 row.className = 'fade-in';
                 row.innerHTML = `
@@ -1915,7 +1953,13 @@
                     </td>
                     <td><span class="category-tag ${category.class}">${category.name}</span></td>
                     <td>
-                        <div class="product-price">¥${product.price}</div>
+                        <div class="price-container">
+                            <div class="original-price">原价: ¥${product.originalPrice}</div>
+                            <div class="sale-price">
+                                <span>活动价: ¥${product.salePrice}</span>
+                                ${discountPercent > 0 ? `<span class="sale-badge">-${discountPercent}%</span>` : ''}
+                            </div>
+                        </div>
                     </td>
                     <td>
                         <div class="action-buttons">
@@ -1940,7 +1984,7 @@
             document.getElementById('totalCount').textContent = products.length;
             
             if (productsToShow.length > 0) {
-                const prices = productsToShow.map(p => p.price);
+                const prices = productsToShow.map(p => p.salePrice);
                 const minPrice = Math.min(...prices);
                 const maxPrice = Math.max(...prices);
                 document.getElementById('priceRange').textContent = `${minPrice}-${maxPrice}`;
@@ -1950,7 +1994,7 @@
             
             // 更新头部统计
             const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
-            const totalAmount = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            const totalAmount = cart.reduce((sum, item) => sum + (item.salePrice * item.quantity), 0);
             
             document.getElementById('cartTotal').textContent = totalItems;
             document.getElementById('cartAmount').textContent = totalAmount;
@@ -2034,9 +2078,9 @@
             
             // 排序
             if (sort === 'price-asc') {
-                filteredProducts.sort((a, b) => a.price - b.price);
+                filteredProducts.sort((a, b) => a.salePrice - b.salePrice);
             } else if (sort === 'price-desc') {
-                filteredProducts.sort((a, b) => b.price - a.price);
+                filteredProducts.sort((a, b) => b.salePrice - a.salePrice);
             }
             
             renderProductTable(filteredProducts);
@@ -2055,17 +2099,25 @@
             const product = products.find(p => p.id === productId);
             if (product) {
                 const category = categories[product.category];
+                const discountPercent = Math.round((1 - product.salePrice / product.originalPrice) * 100);
+                
                 const detailInfo = {
                     1: "固满德山道巡礼300-10，高性能摩托车轮胎，适合多种路况",
                     2: "山道巡礼90-90-10，优质摩托车轮胎，提供良好的抓地力",
                     3: "山道巡礼100-90-10，宽胎设计，提升行驶稳定性",
                     4: "天选之子120-70-12，高性能运动轮胎，适合高速行驶",
                     5: "天选之子130-70-12，宽胎设计，提供更好的操控性",
-                    6: "电热把手，冬季骑行保暖神器，原价180元，现特价140元",
-                    7: "未来之眼F150PRO，高性能摩托车射灯，原价598元，现特价398元"
+                    6: "电热把手，冬季骑行保暖神器",
+                    7: "未来之眼F150PRO，高性能摩托车射灯",
+                    8: "螃蟹皮，优质摩托车配件"
                 };
                 
-                const detail = detailInfo[productId] || `商品详情\n\n名称: ${product.name}\n分类: ${category.name}\n价格: ¥${product.price}`;
+                let detail = detailInfo[productId] || `商品详情\n\n名称: ${product.name}\n分类: ${category.name}`;
+                detail += `\n原价: ¥${product.originalPrice}`;
+                detail += `\n活动价: ¥${product.salePrice}`;
+                if (discountPercent > 0) {
+                    detail += ` (节省¥${product.originalPrice - product.salePrice}，优惠${discountPercent}%)`;
+                }
                 
                 alert(detail);
             }
@@ -2093,7 +2145,8 @@
                 cart.push({
                     id: product.id,
                     name: product.name,
-                    price: product.price,
+                    originalPrice: product.originalPrice,
+                    salePrice: product.salePrice,
                     quantity: 1
                 });
                 showNotification(`"${product.name}" 已添加到采购单`, 'success');
@@ -2116,9 +2169,9 @@
             }
             
             if (sort === 'price-asc') {
-                filteredProducts.sort((a, b) => a.price - b.price);
+                filteredProducts.sort((a, b) => a.salePrice - b.salePrice);
             } else if (sort === 'price-desc') {
-                filteredProducts.sort((a, b) => b.price - a.price);
+                filteredProducts.sort((a, b) => b.salePrice - a.salePrice);
             }
             
             return filteredProducts;
@@ -2161,13 +2214,13 @@
                 itemElement.className = 'cart-item slide-in';
                 itemElement.dataset.id = item.id;
                 
-                const itemTotal = item.price * item.quantity;
+                const itemTotal = item.salePrice * item.quantity;
                 total += itemTotal;
                 
                 itemElement.innerHTML = `
                     <div class="cart-item-info">
                         <div class="cart-item-name">${item.name}</div>
-                        <div class="cart-item-price">¥${item.price} × ${item.quantity} = ¥${itemTotal}</div>
+                        <div class="cart-item-price">¥${item.salePrice} × ${item.quantity} = ¥${itemTotal}</div>
                     </div>
                     <div class="cart-item-controls">
                         <button class="qty-btn">-</button>
@@ -2259,13 +2312,13 @@
             }
             
             const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
-            const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            const total = cart.reduce((sum, item) => sum + (item.salePrice * item.quantity), 0);
             
             let message = "采购单确认\n\n";
             message += "您将要采购以下商品：\n\n";
             
             cart.forEach(item => {
-                message += `• ${item.name} x ${item.quantity} = ¥${(item.price * item.quantity).toFixed(2)}\n`;
+                message += `• ${item.name} x ${item.quantity} = ¥${(item.salePrice * item.quantity).toFixed(2)}\n`;
             });
             
             message += `\n应付总额: ¥${total.toFixed(2)}\n\n`;
@@ -2349,7 +2402,7 @@
             
             // 添加商品列表，每行一个商品
             cart.forEach((item, index) => {
-                const itemTotal = item.price * item.quantity;
+                const itemTotal = item.salePrice * item.quantity;
                 remarkText += `${item.name} x${item.quantity} ¥${itemTotal}`;
                 
                 // 如果不是最后一项，添加换行
@@ -2359,7 +2412,7 @@
             });
             
             // 添加总计
-            const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            const total = cart.reduce((sum, item) => sum + (item.salePrice * item.quantity), 0);
             if (cart.length > 0) {
                 remarkText += `\n总计: ¥${total.toFixed(2)}`;
             }
